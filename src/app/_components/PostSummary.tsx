@@ -3,6 +3,7 @@ import type { Post } from "@/app/_types/Post";
 import dayjs from "dayjs";
 import { twMerge } from "tailwind-merge";
 import DOMPurify from "isomorphic-dompurify";
+import Link from "next/link";
 
 type Props = {
   post: Post;
@@ -33,11 +34,13 @@ const PostSummary: React.FC<Props> = (props) => {
           ))}
         </div>
       </div>
-      <div className="mb-1 text-lg font-bold">{post.title}</div>
-      <div
-        className="line-clamp-3"
-        dangerouslySetInnerHTML={{ __html: safeHTML }}
-      ></div>
+      <Link href={`/posts/${post.id}`}>
+        <div className="mb-1 text-lg font-bold">{post.title}</div>
+        <div
+          className="line-clamp-3"
+          dangerouslySetInnerHTML={{ __html: safeHTML }}
+        />
+      </Link>
     </div>
   );
 };
