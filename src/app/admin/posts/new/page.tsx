@@ -30,6 +30,7 @@ const Page: React.FC = () => {
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newCoverImageURL, setNewCoverImageURL] = useState("");
+  const [newCoverImageKey, setNewCoverImageKey] = useState("hoge"); // ◀ 追加
 
   const router = useRouter();
   const { token } = useAuth();
@@ -112,6 +113,9 @@ const Page: React.FC = () => {
     setNewCoverImageURL(e.target.value);
   };
 
+  //
+  const updateNewCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {};
+
   // フォームの送信処理
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -140,7 +144,7 @@ const Page: React.FC = () => {
         cache: "no-store",
         headers: {
           "Content-Type": "application/json",
-          Authorization: token, // ◀ 追加
+          Authorization: token + "a", // ◀ 追加
         },
         body: JSON.stringify(requestBody),
       });
@@ -242,6 +246,29 @@ const Page: React.FC = () => {
             required
           />
         </div>
+
+        <div className="space-y-1">
+          <label htmlFor="coverImageKey" className="block font-bold">
+            カバーイメージ (Key)
+          </label>
+          <input
+            type="url"
+            id="coverImageKey"
+            name="coverImageKey"
+            className="w-full rounded-md border-2 px-2 py-1 text-gray-500"
+            value={newCoverImageKey}
+            disabled
+            readOnly
+            required
+          />
+        </div>
+
+        <input
+          type="file"
+          id="coverImage"
+          onChange={updateNewCoverImage}
+          accept="image/*"
+        />
 
         <div className="space-y-1">
           <div className="font-bold">タグ</div>
