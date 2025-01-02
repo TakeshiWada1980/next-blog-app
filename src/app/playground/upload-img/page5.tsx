@@ -56,8 +56,8 @@ const Page: React.FC = () => {
       {/* ▼ 追加 ▼ */}
       <button
         // 参照を経由してプログラム的にクリックイベントを発生させる
-        onClick={() => hiddenFileInputRef.current?.click()}
         type="button"
+        onClick={() => hiddenFileInputRef.current?.click()}
         className="rounded-md bg-indigo-500 px-3 py-1 text-white"
       >
         ファイルを選択
