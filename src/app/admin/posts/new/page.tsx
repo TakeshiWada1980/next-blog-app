@@ -8,21 +8,7 @@ import { useAuth } from "@/app/_hooks/useAuth";
 import { calculateMD5Hash } from "@/app/_utils/calculateMD5Hash";
 import { supabase } from "@/utils/supabase";
 import Image from "next/image";
-
-// カテゴリをフェッチしたときのレスポンスのデータ型
-type CategoryApiResponse = {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-// 投稿記事のカテゴリ選択用のデータ型
-type SelectableCategory = {
-  id: string;
-  name: string;
-  isSelect: boolean;
-};
+import { CategoryApiResponse, SelectableCategory } from "@/app/_types/Category";
 
 // 投稿記事の新規作成のページ
 const Page: React.FC = () => {
