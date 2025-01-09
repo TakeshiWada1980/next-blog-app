@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { twMerge } from "tailwind-merge";
 import DOMPurify from "isomorphic-dompurify";
 import Link from "next/link";
+import { useAuth } from "@/app/_hooks/useAuth";
 
 type Props = {
   post: Post;
@@ -18,6 +19,7 @@ const AdminPostSummary: React.FC<Props> = (props) => {
   const safeHTML = DOMPurify.sanitize(post.content, {
     ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "br"],
   });
+  const { token } = useAuth();
 
   // 「削除」のボタンが押下されたときにコールされる関数
   const handleDelete = async (post: Post) => {
@@ -32,6 +34,9 @@ const AdminPostSummary: React.FC<Props> = (props) => {
       const res = await fetch(requestUrl, {
         method: "DELETE",
         cache: "no-store",
+        headers: {
+          Authorization: token!,
+        },
       });
 
       if (!res.ok) {

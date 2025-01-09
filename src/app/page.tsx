@@ -24,6 +24,8 @@ const Page: React.FC = () => {
           throw new Error("データの取得に失敗しました");
         }
         const postResponse: PostApiResponse[] = await response.json();
+
+        console.log(JSON.stringify(postResponse, null, 2));
         setPosts(
           postResponse.map((rawPost) => ({
             id: rawPost.id,

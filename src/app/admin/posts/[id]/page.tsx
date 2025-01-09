@@ -255,6 +255,9 @@ const Page: React.FC = () => {
       if (!res.ok) {
         throw new Error(`${res.status}: ${res.statusText}`);
       }
+      // 投稿記事ページにリダイレクト
+      setIsSubmitting(false);
+      router.push(`/admin/posts`);
     } catch (error) {
       const errorMsg =
         error instanceof Error
@@ -262,7 +265,6 @@ const Page: React.FC = () => {
           : `予期せぬエラーが発生しました\n${error}`;
       console.error(errorMsg);
       window.alert(errorMsg);
-    } finally {
       setIsSubmitting(false);
     }
   };

@@ -1,7 +1,6 @@
 "use client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
-import { twMerge } from "tailwind-merge";
 
 const ValidationAlert = ({ msg }: { msg: string }) => {
   if (msg === "") {
