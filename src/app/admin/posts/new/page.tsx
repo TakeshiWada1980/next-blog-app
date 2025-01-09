@@ -1,24 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
-
-// カテゴリをフェッチしたときのレスポンスのデータ型
-type CategoryApiResponse = {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-// 投稿記事のカテゴリ選択用のデータ型
-type SelectableCategory = {
-  id: string;
-  name: string;
-  isSelect: boolean;
-};
+import { useAuth } from "@/app/_hooks/useAuth";
+import { calculateMD5Hash } from "@/app/_utils/calculateMD5Hash";
+import { supabase } from "@/utils/supabase";
+import Image from "next/image";
+import { CategoryApiResponse, SelectableCategory } from "@/app/_types/Category";
 
 // 投稿記事の新規作成のページ
 const Page: React.FC = () => {
@@ -28,9 +18,14 @@ const Page: React.FC = () => {
 
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
-  const [newCoverImageURL, setNewCoverImageURL] = useState("");
+  const [newCoverImageUrl, setNewCoverImageUrl] = useState("");
+  const [newCoverImageKey, setNewCoverImageKey] = useState("");
 
   const router = useRouter();
+  const { token } = useAuth();
+
+  const hiddenFileInputRef = useRef<HTMLInputElement>(null);
+  const bucketName = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET!;
 
   // カテゴリ配列 (State)。取得中と取得失敗時は null、既存カテゴリが0個なら []
   const [checkableCategories, setCheckableCategories] = useState<
@@ -105,23 +100,47 @@ const Page: React.FC = () => {
     setNewContent(e.target.value);
   };
 
-  const updateNewCoverImageURL = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // ここにカバーイメージURLのバリデーション処理を追加する
-    setNewCoverImageURL(e.target.value);
+  //
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    setNewCoverImageKey("");
+    setNewCoverImageUrl("");
+
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files?.[0];
+    const fileHash = await calculateMD5Hash(file);
+    const path = `private/${fileHash}`;
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(path, file, { upsert: true });
+
+    if (error || !data) {
+      window.alert(`アップロードに失敗 ${error.message}`);
+      return;
+    }
+    setNewCoverImageKey(data.path);
+    const publicUrlResult = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(data.path);
+    setNewCoverImageUrl(publicUrlResult.data.publicUrl);
   };
 
   // フォームの送信処理
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // この処理をしないとページがリロードされるので注意
+    e.preventDefault();
+
+    // ▼ 追加: トークンが取得できない場合はアラートを表示して処理中断
+    if (!token) {
+      window.alert("予期せぬ動作：トークンが取得できません。");
+      return;
+    }
 
     setIsSubmitting(true);
 
-    // ▼▼ 追加 ウェブAPI (/api/admin/posts) にPOSTリクエストを送信する処理
     try {
       const requestBody = {
         title: newTitle,
         content: newContent,
-        coverImageURL: newCoverImageURL,
+        coverImageKey: newCoverImageKey,
         categoryIds: checkableCategories
           ? checkableCategories.filter((c) => c.isSelect).map((c) => c.id)
           : [],
@@ -133,17 +152,18 @@ const Page: React.FC = () => {
         cache: "no-store",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token,
         },
         body: JSON.stringify(requestBody),
       });
 
       if (!res.ok) {
-        throw new Error(`${res.status}: ${res.statusText}`); // -> catch節に移動
+        throw new Error(`${res.status}: ${res.statusText}`);
       }
 
       const postResponse = await res.json();
       setIsSubmitting(false);
-      router.push(`/posts/${postResponse.id}`); // 投稿記事の詳細ページに移動
+      router.push(`/posts/${postResponse.id}`);
     } catch (error) {
       const errorMsg =
         error instanceof Error
@@ -220,20 +240,52 @@ const Page: React.FC = () => {
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="coverImageURL" className="block font-bold">
-            カバーイメージ (URL)
+          <label htmlFor="coverImageKey" className="block font-bold">
+            カバーイメージ (Key)
           </label>
           <input
             type="url"
-            id="coverImageURL"
-            name="coverImageURL"
-            className="w-full rounded-md border-2 px-2 py-1"
-            value={newCoverImageURL}
-            onChange={updateNewCoverImageURL}
-            placeholder="カバーイメージのURLを記入してください"
+            id="coverImageKey"
+            name="coverImageKey"
+            className="w-full rounded-md border-2 px-2 py-1 text-gray-500"
+            value={newCoverImageKey}
+            disabled
+            readOnly
             required
           />
+
+          <input
+            id="imgSelector"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            hidden={true}
+            ref={hiddenFileInputRef}
+          />
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => hiddenFileInputRef.current?.click()}
+              className="mt-1.5 rounded-md bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-700"
+            >
+              画像ファイルを選択
+            </button>
+          </div>
         </div>
+
+        {newCoverImageUrl != "" && (
+          <div className="mt-2">
+            <Image
+              className="rounded-xl"
+              src={newCoverImageUrl}
+              alt="プレビュー画像"
+              width={1024}
+              height={0}
+              priority
+            />
+          </div>
+        )}
 
         <div className="space-y-1">
           <div className="font-bold">タグ</div>

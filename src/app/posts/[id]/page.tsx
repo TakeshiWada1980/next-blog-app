@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { supabase } from "@/utils/supabase";
 
 import type { Post } from "@/app/_types/Post";
 import type { PostApiResponse } from "@/app/_types/PostApiResponse";
@@ -9,12 +10,16 @@ import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import Image from "next/image";
 
 import DOMPurify from "isomorphic-dompurify";
+import dayjs from "dayjs";
+import { twMerge } from "tailwind-merge";
 
 // 投稿記事の詳細表示 /posts/[id]
 const Page: React.FC = () => {
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const bucketName = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET!;
+  const dtFmt = "YYYY年MM月DD日 HH:mm";
 
   // 動的ルートパラメータから id を取得 （URL:/posts/[id]）
   const { id } = useParams() as { id: string };
@@ -37,7 +42,9 @@ const Page: React.FC = () => {
           title: postApiResponse.title,
           content: postApiResponse.content,
           coverImage: {
-            url: postApiResponse.coverImageURL,
+            url: supabase.storage
+              .from(bucketName)
+              .getPublicUrl(postApiResponse.coverImageKey).data.publicUrl,
             width: 1000,
             height: 1000,
           },
@@ -56,7 +63,7 @@ const Page: React.FC = () => {
       }
     };
     fetchPosts();
-  }, [id]);
+  }, [bucketName, id]);
 
   if (fetchError) {
     return <div>{fetchError}</div>;
@@ -85,7 +92,10 @@ const Page: React.FC = () => {
   return (
     <main>
       <div className="space-y-2">
-        <div className="mb-2 text-2xl font-bold">{post.title}</div>
+        <div className="text-2xl font-bold">{post.title}</div>
+        <div className="flex justify-end">
+          投稿日：{dayjs(post.createdAt).format(dtFmt)}
+        </div>
         <div>
           <Image
             src={post.coverImage.url}
@@ -95,6 +105,20 @@ const Page: React.FC = () => {
             priority
             className="rounded-xl"
           />
+        </div>
+        <div className="flex space-x-1.5">
+          {post.categories.map((category) => (
+            <div
+              key={category.id}
+              className={twMerge(
+                "rounded-md px-2 py-0.5",
+                "text-xs font-bold",
+                "border border-slate-400 text-slate-500"
+              )}
+            >
+              {category.name}
+            </div>
+          ))}
         </div>
         <div dangerouslySetInnerHTML={{ __html: safeHTML }} />
       </div>
