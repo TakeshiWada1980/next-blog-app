@@ -89,6 +89,8 @@ const Page: React.FC = () => {
     ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "br"],
   });
 
+  console.log(post, null, 2);
+
   return (
     <main>
       <div className="space-y-2">
