@@ -1,6 +1,5 @@
 import prisma from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
-import { Post } from "@prisma/client";
 
 export const revalidate = 0; // キャッシュを無効化
 
